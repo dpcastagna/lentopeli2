@@ -1,0 +1,14 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#peli {
+    align-content: center;
+    width: 80%;
+    border-style: solid;
+    border-radius: 5px;
+    padding: 5px;
+    margin: 10px;
+}
