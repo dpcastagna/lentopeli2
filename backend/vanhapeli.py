@@ -3,10 +3,10 @@ from geopy import distance
 
 yhteys = mysql.connector.connect(
          host='127.0.0.1',
-         port= 3306,
+         port= 3307,
          database='flight_game',
          user='root',
-         password='kissakoira',
+         password='Unzila001',
          autocommit=True,
          use_pure=True
          )

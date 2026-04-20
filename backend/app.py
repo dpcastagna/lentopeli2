@@ -2,6 +2,7 @@ from flask import Flask, Response
 from flask_cors import CORS
 import json
 from database import yhteys
+from flask import request, jsonify
 
 connection = yhteys()
 
@@ -10,7 +11,7 @@ CORS(app)
 @app.route('/haepelaajat')
 def hae_pelaajat():
     try:
-        sql = f"SELECT id, screen_name, battery, batterymax, location, ecopoints, time FROM players"
+        sql = "SELECT id, screen_name, battery, batterymax, location, ecopoints, time FROM players"
         kursori = connection.cursor()
         kursori.execute(sql)
         pelaajat = kursori.fetchall()
@@ -81,5 +82,32 @@ def page_not_found(virhekoodi):
     jsonvast = json.dumps(vastaus)
     return Response(response=jsonvast, status=404, mimetype="application/json")
 
+@app.route('/liiku', methods=['POST'])
+def liiku_pelaaja():
+    try:
+        data = request.get_json()
+
+        pelaaja_id = data["player_id"]
+        icao = data["icao"]
+
+        sql = "UPDATE players SET location = %s WHERE id = %s"
+        kursori = connection.cursor()
+        kursori.execute(sql, (icao, pelaaja_id))
+
+        vastaus = {
+            "status": 200,
+            "teksti": f"Lennettiin kentälle {icao}",
+            "sijainti": icao
+        }
+
+        return jsonify(vastaus), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": 400,
+            "error": str(e)
+        }), 400
+
+
 if __name__ == '__main__':
-    app.run(use_reloader=True, host='127.0.0.1', port=3000)
+    app.run(host='127.0.0.1', port=3000)
