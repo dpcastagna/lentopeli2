@@ -3,6 +3,7 @@ from flask_cors import CORS
 import json
 from database import yhteys
 from geopy import distance
+from flask import request, jsonify
 
 connection = yhteys()
 
@@ -116,6 +117,36 @@ def luo_pelaaja(nimi):
 
     jsonvast = json.dumps(vastaus)
     return Response(response=jsonvast, status=tilakoodi, mimetype="application/json")
+
+@app.route('/liiku', methods=['POST'])
+def liiku_pelaaja():
+    try:
+        data = request.get_json()
+
+        pelaaja_id = data["player_id"]
+        icao = data["icao"]
+
+        sql = "UPDATE players SET location = %s WHERE id = %s"
+        kursori = connection.cursor()
+        kursori.execute(sql, (icao, pelaaja_id))
+
+        vastaus = {
+            "status": 200,
+            "teksti": f"Lennettiin kentälle {icao}",
+            "sijainti": icao
+        }
+
+        return jsonify(vastaus), 200
+
+    except Exception as e:
+        return jsonify({
+            "status": 400,
+            "error": str(e)
+        }), 400
+
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=3000)
 
 """@app.route('/summa/<luku1>/<luku2>')
 def summa(luku1, luku2):
