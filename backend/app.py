@@ -2,7 +2,7 @@ from flask import Flask, Response
 from flask_cors import CORS
 import json
 from database import yhteys
-from flask import request, jsonify
+from geopy import distance
 
 connection = yhteys()
 
@@ -11,7 +11,7 @@ CORS(app)
 @app.route('/haepelaajat')
 def hae_pelaajat():
     try:
-        sql = "SELECT id, screen_name, battery, batterymax, location, ecopoints, time FROM players"
+        sql = f"SELECT id, screen_name, battery, batterymax, location, ecopoints, time FROM players"
         kursori = connection.cursor()
         kursori.execute(sql)
         pelaajat = kursori.fetchall()
@@ -43,6 +43,75 @@ def hae_pelaajat():
         vastaus = {
             "status": tilakoodi,
             "teksti": "Virheellinen "
+        }
+
+    jsonvast = json.dumps(vastaus)
+    return Response(response=jsonvast, status=tilakoodi, mimetype="application/json")
+
+@app.route('/haekentät/<id>')
+def hae_kentät(id):
+    try:
+        id = id
+        sql = f"select * from airport where type = 'large_airport' or continent ='AN'"
+        kursori = connection.cursor()
+        kursori.execute(sql)
+        kentät = kursori.fetchall()
+        data = []
+        for k in kentät:
+
+            data.append({
+                "id": k[0],
+                "ident": k[1],
+                "type": k[2],
+                "name": k[3],
+                "latitude_deg": k[4],
+                "longitude_deg": k[5],
+                "elevation_ft": k[6],
+                "continent": k[7],
+                "iso_country": k[8],
+                "iso_region": k[9],
+                "municipality": k[10]
+            })
+        print(data)
+
+        tilakoodi = 200
+        vastaus = {
+            "status": tilakoodi,
+            "data": data
+        }
+
+    except ValueError:
+        tilakoodi = 400
+        vastaus = {
+            "status": tilakoodi,
+            "teksti": "Virheellinen "
+        }
+
+    jsonvast = json.dumps(vastaus)
+    return Response(response=jsonvast, status=tilakoodi, mimetype="application/json")
+
+@app.route('/luopelaaja/<nimi>')
+def luo_pelaaja(nimi):
+    try:
+        if nimi == '':
+            raise TypeError
+        sql = f"insert into players (screen_name) values ('{nimi}')"
+        kursori = connection.cursor()
+        kursori.execute(sql)
+        kentät = kursori.fetchall()
+
+
+        tilakoodi = 200
+        vastaus = {
+            "status": tilakoodi,
+            "data": f"Pelaaja {nimi} luotu."
+        }
+
+    except TypeError:
+        tilakoodi = 400
+        vastaus = {
+            "status": tilakoodi,
+            "teksti": "Tyhjä nimi!"
         }
 
     jsonvast = json.dumps(vastaus)
@@ -82,32 +151,5 @@ def page_not_found(virhekoodi):
     jsonvast = json.dumps(vastaus)
     return Response(response=jsonvast, status=404, mimetype="application/json")
 
-@app.route('/liiku', methods=['POST'])
-def liiku_pelaaja():
-    try:
-        data = request.get_json()
-
-        pelaaja_id = data["player_id"]
-        icao = data["icao"]
-
-        sql = "UPDATE players SET location = %s WHERE id = %s"
-        kursori = connection.cursor()
-        kursori.execute(sql, (icao, pelaaja_id))
-
-        vastaus = {
-            "status": 200,
-            "teksti": f"Lennettiin kentälle {icao}",
-            "sijainti": icao
-        }
-
-        return jsonify(vastaus), 200
-
-    except Exception as e:
-        return jsonify({
-            "status": 400,
-            "error": str(e)
-        }), 400
-
-
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=3000)
+    app.run(use_reloader=True, host='127.0.0.1', port=3000)
