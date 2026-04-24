@@ -9,6 +9,8 @@ connection = yhteys()
 
 app = Flask(__name__)
 CORS(app)
+
+# --------------------------PELAAJAT----------------------------------#
 @app.route('/haepelaajat')
 def hae_pelaajat():
     try:
@@ -49,6 +51,7 @@ def hae_pelaajat():
     jsonvast = json.dumps(vastaus)
     return Response(response=jsonvast, status=tilakoodi, mimetype="application/json")
 
+#----------------------KENTÄT------------------------#
 @app.route('/haekentät/<id>')
 def hae_kentät(id):
     try:
@@ -91,6 +94,7 @@ def hae_kentät(id):
     jsonvast = json.dumps(vastaus)
     return Response(response=jsonvast, status=tilakoodi, mimetype="application/json")
 
+#-----------------------LUO PELAAJAT------------------------#
 @app.route('/luopelaaja/<nimi>')
 def luo_pelaaja(nimi):
     try:
@@ -118,35 +122,79 @@ def luo_pelaaja(nimi):
     jsonvast = json.dumps(vastaus)
     return Response(response=jsonvast, status=tilakoodi, mimetype="application/json")
 
+#---------------------LIIKU PELAAJAT-------------------------#
 @app.route('/liiku', methods=['POST'])
 def liiku_pelaaja():
     try:
         data = request.get_json()
 
         pelaaja_id = data["player_id"]
-        icao = data["icao"]
+        kohde = data["icao"]
 
-        sql = "UPDATE players SET location = %s WHERE id = %s"
         kursori = connection.cursor()
-        kursori.execute(sql, (icao, pelaaja_id))
 
-        vastaus = {
+    #Get player data:
+        sql = "SELECT location, battery, time FROM players WHERE id = %s"
+        kursori.execute(sql, (pelaaja_id,))
+        pelaaja = kursori.fetchone()
+        if pelaaja is None:
+            return jsonify({"status": 400, "error": "Pelaajaa ei löytynyt"}), 400
+
+        nykyinen = pelaaja[0]
+        akku = pelaaja[1]
+        aika = pelaaja[2]
+
+        #Get latitude
+        sql = "SELECT latitude_deg, longitude_deg FROM airport WHERE ident = %s"
+        kursori.execute(sql, (nykyinen,))
+        alku = kursori.fetchone()
+
+        kursori.execute(sql, (kohde,))
+        loppu = kursori.fetchone()
+
+        if alku is None or loppu is None:
+            return jsonify({"status": 400, "error": "Virheellinen ICAO"}), 400
+
+        #Calculate matka
+        matka_km = distance.distance(
+            (alku[0], alku[1]),
+            (loppu[0], loppu[1])
+        ).km
+
+        akku_kulutus = int(matka_km / 4)
+        aika_kulutus = int(matka_km / 100 + 1)
+
+        #Akku
+        if akku < akku_kulutus:
+            return jsonify({
+                "status": 400,
+                "error": "Akku ei riittää!"
+            }), 400
+
+        #Päivitä arvot
+        uusi_akku = akku - akku_kulutus
+        uusi_aika = aika - aika_kulutus
+
+        sql = """
+        UPDATE players
+        SET location = %s, battery = %s, time = %s
+        WHERE id = %s
+        """
+        kursori.execute(sql, (kohde, uusi_akku, uusi_aika, pelaaja_id))
+
+        return jsonify({
             "status": 200,
-            "teksti": f"Lennettiin kentälle {icao}",
-            "sijainti": icao
-        }
-
-        return jsonify(vastaus), 200
+            "teksti": f"Lennettiin {int(matka_km)} km",
+            "sijainti": kohde,
+            "akku": uusi_akku,
+            "aika": uusi_aika
+        })
 
     except Exception as e:
         return jsonify({
             "status": 400,
             "error": str(e)
         }), 400
-
-
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=3000)
 
 """@app.route('/summa/<luku1>/<luku2>')
 def summa(luku1, luku2):
@@ -173,6 +221,7 @@ def summa(luku1, luku2):
     jsonvast = json.dumps(vastaus)
     return Response(response=jsonvast, status=tilakoodi, mimetype="application/json")"""
 
+#------------------------ERROR HANDLER-------------------------#
 @app.errorhandler(404)
 def page_not_found(virhekoodi):
     vastaus = {
@@ -182,5 +231,6 @@ def page_not_found(virhekoodi):
     jsonvast = json.dumps(vastaus)
     return Response(response=jsonvast, status=404, mimetype="application/json")
 
+#----------------------SUORITA SOVELLUS-----------------------#
 if __name__ == '__main__':
-    app.run(use_reloader=True, host='127.0.0.1', port=3000)
+    app.run(host='127.0.0.1', port=3000)
