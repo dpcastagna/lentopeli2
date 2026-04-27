@@ -7,6 +7,19 @@ from flask import request, jsonify
 
 connection = yhteys()
 
+#----------------------------MAANOSAT--------------------------------#
+
+def hae_maanosat(pelaaja_id):
+    sql = "SELECT continent FROM continent_reached WHERE player_id = %s"
+    kursori = connection.cursor()
+    kursori.execute(sql, (pelaaja_id,))
+    tulos = kursori.fetchall()
+
+    maanosat = []
+    for t in tulos:
+        maanosat.append(t[0])
+    return maanosat
+
 app = Flask(__name__)
 CORS(app)
 
@@ -168,12 +181,35 @@ def liiku_pelaaja():
         if akku < akku_kulutus:
             return jsonify({
                 "status": 400,
-                "error": "Akku ei riittää!"
+                "error": "Akku ei riitä!"
             }), 400
 
         #Päivitä arvot
         uusi_akku = akku - akku_kulutus
         uusi_aika = aika - aika_kulutus
+
+        #Hae maanosat
+        sql = "SELECT continent FROM airport WHERE ident = %s"
+        kursori.execute(sql, (kohde,))
+
+        row = kursori.fetchone()
+        if row is None:
+            return jsonify({
+                "status": 400,
+                "error": "Continent not found."
+            }), 400
+        continent = row[0]
+
+        #Onks saavutus?
+        sql = "SELECT * FROM continent_reached WHERE player_id = %s AND continent = %s"
+        kursori.execute(sql, (pelaaja_id, continent))
+        exists = kursori.fetchone()
+
+        if exists is None:
+            sql = "INSERT INTO continent_reached (player_id, continent) VALUES (%s, %s)"
+            kursori.execute(sql, (pelaaja_id, continent))
+
+
 
         sql = """
         UPDATE players
@@ -187,7 +223,8 @@ def liiku_pelaaja():
             "teksti": f"Lennettiin {int(matka_km)} km",
             "sijainti": kohde,
             "akku": uusi_akku,
-            "aika": uusi_aika
+            "aika": uusi_aika,
+            "maanosat" : hae_maanosat(pelaaja_id)
         })
 
     except Exception as e:
