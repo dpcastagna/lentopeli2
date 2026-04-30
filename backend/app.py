@@ -232,6 +232,52 @@ def liiku_pelaaja():
             "status": 400,
             "error": str(e)
         }), 400
+#---------------------KÄYTÄ EKOPOINTSEJA-------------------------#
+@app.route('/käytä_ekopisteitä/<int:pelaaja_id>/<toiminto>')
+def kayta_ekopisteita(pelaaja_id, toiminto):
+    try:
+        sql = f"SELECT ecopoints, battery, batterymax FROM players WHERE id = '{pelaaja_id}'"
+        kursori = connection.cursor()
+        kursori.execute(sql)
+        pelaaja = kursori.fetchone()
+        if pelaaja is None:
+            return {
+                "status": 400,
+                "error": "Pelaajaa ei löytynyt"
+            }
+
+        if toiminto == "lataa":
+            if pelaaja[0] < 1:
+                return {
+                    "status": 400,
+                    "error": "lian vähän ekopisteitä"
+                }
+            sql = f"UPDATE players SET battery = {pelaaja[2]}, ecopoints = {pelaaja[0]-1} WHERE id = '{pelaaja_id}'"
+            kursori = connection.cursor()
+            kursori.execute(sql)
+            return {
+                "status": 200,
+                "error": "akku ladattu ekopisteillä"
+            }
+        elif toiminto == "paranna":
+            if pelaaja[0] < 5:
+                return {
+                    "status": 400,
+                    "error": "lian vähän ekopisteitä"
+                }
+            sql = f"UPDATE players SET batterymax = {pelaaja[2]+100}, ecopoints = {pelaaja[0]-5} WHERE id = '{pelaaja_id}'"
+            kursori = connection.cursor()
+            kursori.execute(sql)
+            return {
+                "status": 200,
+                "error": "akku paranettu ekopisteillä"
+            }
+
+    except Exception as e:
+        return {
+            "status": 400,
+            "error": str(e)
+        }
 
 """@app.route('/summa/<luku1>/<luku2>')
 def summa(luku1, luku2):
