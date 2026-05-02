@@ -7,6 +7,9 @@ from flask import request, jsonify
 
 connection = yhteys()
 
+app = Flask(__name__)
+CORS(app)
+
 #----------------------------MAANOSAT--------------------------------#
 
 def hae_maanosat(pelaaja_id):
@@ -20,10 +23,42 @@ def hae_maanosat(pelaaja_id):
         maanosat.append(t[0])
     return maanosat
 
-app = Flask(__name__)
-CORS(app)
-
 # --------------------------PELAAJAT----------------------------------#
+def hae_pelaajan_kenttä(icao):
+    sql = f"select * from airport where ident = '{icao}'"
+    kursori = connection.cursor()
+    kursori.execute(sql)
+    tulos = kursori.fetchall()
+    return tulos[0]
+
+def hae_lentokentta(ident):
+    kentta = """
+            SELECT ident, name, latitude_deg, longitude_deg
+            FROM airport
+            WHERE ident = %s
+        """
+    kursori = connection.cursor()
+    kursori.execute(kentta, (ident,))
+    kenttä = kursori.fetchone()
+    #print(kenttä)
+    return kenttä[1]
+
+def hae_mantere(icao):
+    sql = f"select continent from airport where ident = '{icao}'"
+    kursori = connection.cursor()
+    kursori.execute(sql)
+    tulos = kursori.fetchone()
+    #print(tulos)
+    return tulos[0]
+
+def hae_maa(icao):
+    sql = "SELECT country.name FROM country, airport WHERE ident = %s AND country.iso_country = airport.iso_country"
+    kursori = connection.cursor()
+    kursori.execute(sql, (icao,))
+    maa = kursori.fetchone()
+    #print(maa, icao, sql)
+    return maa[0]
+
 @app.route('/haepelaajat')
 def hae_pelaajat():
     try:
@@ -39,12 +74,12 @@ def hae_pelaajat():
                 "akku": p[2],
                 "akkumax": p[3],
                 "sijainti": p[4],
-                #"kenttä": hae_lentokentta(p[4]),
-                #"maa": hae_maa(p[4]),
-                #"mantere": hae_mantere(p[4]),
+                "kenttä": hae_lentokentta(p[4]),
+                "maa": hae_maa(p[4]),
+                "mantere": hae_mantere(p[4]),
                 "ekopisteet": p[5],
                 "aika": p[6],
-                #"maanosat": hae_maanosat(p[0])
+                "maanosat": hae_maanosat(p[0])
             })
         #print(data)
 
@@ -101,7 +136,7 @@ def hae_kentät(id):
         tilakoodi = 400
         vastaus = {
             "status": tilakoodi,
-            "teksti": "Virheellinen "
+            "teksti": "Virheellinen id"
         }
 
     jsonvast = json.dumps(vastaus)

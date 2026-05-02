@@ -5,6 +5,21 @@ let current_pelaaja = null;
 
 const peli = document.querySelector('#peli');
 
+//KARTTA
+
+//pitäisi estää 403r-virheet "karttatiilissä", ei näytä toimivan Firefoxissa, Chromessa ei näytä virheitä
+L.TileLayer.prototype.options.referrerPolicy = 'strict-origin-when-cross-origin';
+
+const map = L.map('map', {
+    center: [51.505, -0.09],
+    zoom: 5
+});
+
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
+
 async function hae_pelaajat() {
   try {
         const response = await fetch(`http://127.0.0.1:3000/haepelaajat`);
@@ -22,7 +37,7 @@ async function hae_pelaajat() {
 }
 
 function näytä_pelaajat() {
-  peli.innerHTML = '<h1>Ekolentopeli 2</h1><h2>Valitse pelajaa</h2>';
+  peli.innerHTML = '<h1>Ekolentopeli 2</h1><h2>Valitse pelaaja</h2>';
 
   pelaajat.forEach(p => {
     const btn = document.createElement('button');
