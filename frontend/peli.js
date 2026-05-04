@@ -27,11 +27,20 @@ function näytä_pelaaja_kartalla() {
   if (pelaajan_merkki) {
     map.removeLayer(pelaajan_merkki);
   }
+  let myIcon = L.icon({
+    iconUrl: 'leaflet/images/plane.png',
+    iconSize: [60, 60],
+    /*iconAnchor: [22, 94],
+    popupAnchor: [-3, -76],
+    shadowUrl: 'my-icon-shadow.png',
+    shadowSize: [68, 95],
+    shadowAnchor: [22, 94]*/
+  });
 
   pelaajan_merkki = L.marker([
       current_pelaaja.lat,
       current_pelaaja.lng,
-  ]).addTo(map);
+  ],{icon: myIcon}).addTo(map);
 
   map.setView([current_pelaaja.lat, current_pelaaja.lng], 5);
 }
