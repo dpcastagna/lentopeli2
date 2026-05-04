@@ -105,7 +105,7 @@ def hae_pelaajat():
         tilakoodi = 400
         vastaus = {
             "status": tilakoodi,
-            "teksti": "Virheellinen "
+            "teksti": "Virheellinen osoite"
         }
 
     jsonvast = json.dumps(vastaus)
@@ -115,28 +115,35 @@ def hae_pelaajat():
 @app.route('/haekentät/<id>')
 def hae_kentät(id):
     try:
-        id = id
         sql = f"select * from airport where type = 'large_airport' or continent ='AN'"
         kursori = connection.cursor()
         kursori.execute(sql)
         kentät = kursori.fetchall()
         data = []
+        pelaajasql = f"select * from players where id = {id}"
+        kursori = connection.cursor()
+        kursori.execute(pelaajasql)
+        pelaaja = kursori.fetchone()
+        #print(pelaaja)
+        pelaajankenttä = hae_pelaajan_kenttä(pelaaja[2])
         for k in kentät:
-
-            data.append({
-                "id": k[0],
-                "ident": k[1],
-                "type": k[2],
-                "name": k[3],
-                "latitude_deg": k[4],
-                "longitude_deg": k[5],
-                "elevation_ft": k[6],
-                "continent": k[7],
-                "iso_country": k[8],
-                "iso_region": k[9],
-                "municipality": k[10]
-            })
-        print(data)
+            if k[1] == pelaajankenttä[1]:
+                continue
+            if distance.distance((k[4], k[5]), (pelaajankenttä[4], pelaajankenttä[5])).km < pelaaja[4] * 4:
+                data.append({
+                    "id": k[0],
+                    "ident": k[1],
+                    "type": k[2],
+                    "name": k[3],
+                    "latitude_deg": k[4],
+                    "longitude_deg": k[5],
+                    "elevation_ft": k[6],
+                    "continent": k[7],
+                    "iso_country": k[8],
+                    "iso_region": k[9],
+                    "municipality": k[10]
+                })
+        #print(data)
 
         tilakoodi = 200
         vastaus = {
@@ -144,7 +151,7 @@ def hae_kentät(id):
             "data": data
         }
 
-    except ValueError:
+    except TypeError:
         tilakoodi = 400
         vastaus = {
             "status": tilakoodi,
