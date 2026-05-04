@@ -2,10 +2,11 @@
 
 let pelaajat = [];
 let current_pelaaja = null;
+let pelaajan_merkki = null;
 
 const peli = document.querySelector('#peli');
 
-//KARTTA
+//----------------------KARTTA----------------------------//
 
 //pitäisi estää 403r-virheet "karttatiilissä", ei näytä toimivan Firefoxissa, Chromessa ei näytä virheitä
 L.TileLayer.prototype.options.referrerPolicy = 'strict-origin-when-cross-origin';
@@ -20,6 +21,22 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
+//----------------------Pelaajat Merkki----------------------//
+
+function näytä_pelaaja_kartalla() {
+  if (pelaajan_merkki) {
+    map.removeLayer(pelaajan_merkki);
+  }
+
+  pelaajan_merkki = L.marker([
+      current_pelaaja.lat,
+      current_pelaaja.lng,
+  ]).addTo(map);
+
+  map.setView([current_pelaaja.lat, current_pelaaja.lng], 5);
+}
+
+//----------------Hae pelaajat----------//
 async function hae_pelaajat() {
   try {
         const response = await fetch(`http://127.0.0.1:3000/haepelaajat`);
@@ -36,6 +53,7 @@ async function hae_pelaajat() {
     }
 }
 
+//----------------------Näytä pelaajat--------------------//
 function näytä_pelaajat() {
   peli.innerHTML = '<h1>Ekolentopeli 2</h1><h2>Valitse pelaaja</h2>';
 
@@ -53,6 +71,7 @@ function näytä_pelaajat() {
 function valitse_pelaaja(pelaaja) {
   current_pelaaja = pelaaja;
   näytä_peli();
+  näytä_pelaaja_kartalla();
 }
 
 function näytä_peli() {
@@ -70,6 +89,7 @@ function näytä_peli() {
     `;
 }
 
+//-----------------------Liikettä-------------------//
 async function liiku() {
   const icao = prompt("Anna ICAO-koodi: ");
   if (!icao) return;
@@ -97,11 +117,14 @@ async function liiku() {
     current_pelaaja.sijainti = data.sijainti;
     current_pelaaja.akku = data.akku;
     current_pelaaja.aika = data.aika;
+    current_pelaaja.lat=data.lat;
+    current_pelaaja.lng = data.lng;
 
     if (data.maanosat) {
       current_pelaaja.maanosat = data.maanosat;
     }
     näytä_peli();
+    näytä_pelaaja_kartalla(); //päivitä kartta
 
   } catch (error) {
         console.log(error);

@@ -12,6 +12,12 @@ CORS(app)
 
 #----------------------------MAANOSAT--------------------------------#
 
+def hae_koordinaatit(icao):
+    sql = "SELECT latitude_deg, longitude_deg FROM airport WHERE ident = %s"
+    kursori = connection.cursor()
+    kursori.execute(sql, (icao,))
+    return kursori.fetchone()
+
 def hae_maanosat(pelaaja_id):
     sql = "SELECT continent FROM continent_reached WHERE player_id = %s"
     kursori = connection.cursor()
@@ -68,12 +74,18 @@ def hae_pelaajat():
         pelaajat = kursori.fetchall()
         data = []
         for p in pelaajat:
+            coords = hae_koordinaatit(p[4])
+            lat = coords[0] if coords else None
+            lng = coords[1] if coords else None
+
             data.append({
                 "id": p[0],
                 "nimi": p[1],
                 "akku": p[2],
                 "akkumax": p[3],
                 "sijainti": p[4],
+                "lat": lat,
+                "lng": lng,
                 "kenttä": hae_lentokentta(p[4]),
                 "maa": hae_maa(p[4]),
                 "mantere": hae_mantere(p[4]),
@@ -192,22 +204,15 @@ def liiku_pelaaja():
         akku = pelaaja[1]
         aika = pelaaja[2]
 
-        #Get latitude
-        sql = "SELECT latitude_deg, longitude_deg FROM airport WHERE ident = %s"
-        kursori.execute(sql, (nykyinen,))
-        alku = kursori.fetchone()
-
-        kursori.execute(sql, (kohde,))
-        loppu = kursori.fetchone()
+    #--------------coords----------------------#
+        alku = hae_koordinaatit(nykyinen)
+        loppu = hae_koordinaatit(kohde)
 
         if alku is None or loppu is None:
             return jsonify({"status": 400, "error": "Virheellinen ICAO"}), 400
 
         #Calculate matka
-        matka_km = distance.distance(
-            (alku[0], alku[1]),
-            (loppu[0], loppu[1])
-        ).km
+        matka_km = distance.distance(alku, loppu).km
 
         akku_kulutus = int(matka_km / 4)
         aika_kulutus = int(matka_km / 100 + 1)
@@ -244,7 +249,7 @@ def liiku_pelaaja():
             sql = "INSERT INTO continent_reached (player_id, continent) VALUES (%s, %s)"
             kursori.execute(sql, (pelaaja_id, continent))
 
-
+#-----------------Päivitä pelaajat-----------------#
 
         sql = """
         UPDATE players
@@ -252,11 +257,14 @@ def liiku_pelaaja():
         WHERE id = %s
         """
         kursori.execute(sql, (kohde, uusi_akku, uusi_aika, pelaaja_id))
+        coords = loppu
 
         return jsonify({
             "status": 200,
             "teksti": f"Lennettiin {int(matka_km)} km",
             "sijainti": kohde,
+            "lat": coords[0],
+            "lng": coords[1],
             "akku": uusi_akku,
             "aika": uusi_aika,
             "maanosat" : hae_maanosat(pelaaja_id)
