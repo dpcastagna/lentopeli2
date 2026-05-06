@@ -354,6 +354,43 @@ def summa(luku1, luku2):
     jsonvast = json.dumps(vastaus)
     return Response(response=jsonvast, status=tilakoodi, mimetype="application/json")"""
 
+#-------------------------SÄÄ---------------------------------#
+@app.route('/saa/<icao>')
+def hae_saa(icao):
+    try:
+        import requests
+        #API key
+        API_KEY = "440e3dd1d283045e7c676c24bbf8a478"
+        coords = hae_koordinaatit(icao)
+
+        if coords is None:
+            return jsonify({
+                "status": 400,
+                "error": "Virheellinen ICAO"
+            }), 400
+
+        lat, lng = coords
+
+        #openweather API
+        url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lng}&appid={API_KEY}&units=metric"
+        response = requests.get(url)
+        data = response.json()
+
+        weather_main = data["weather"][0]["main"]
+        weather_description = data["weather"][0]["description"]
+        temperature = data["main"]["temp"]
+        saa = f"{weather_description.capitalize()}, {round(temperature)}°C"
+
+        return jsonify({
+            "status": 200,
+            "saa": saa,
+        })
+    except Exception as e:
+        return jsonify({
+            "status": 400,
+            "error": str(e)
+        }), 400
+
 #------------------------ERROR HANDLER-------------------------#
 @app.errorhandler(404)
 def page_not_found(virhekoodi):
