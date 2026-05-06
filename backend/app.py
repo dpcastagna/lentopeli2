@@ -4,6 +4,7 @@ import json
 from database import yhteys
 from geopy import distance
 from flask import request, jsonify
+import requests
 
 connection = yhteys()
 
@@ -412,7 +413,6 @@ def summa(luku1, luku2):
 @app.route('/saa/<icao>')
 def hae_saa(icao):
     try:
-        import requests
         #API key
         API_KEY = "440e3dd1d283045e7c676c24bbf8a478"
         coords = hae_koordinaatit(icao)
