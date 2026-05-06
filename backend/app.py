@@ -329,6 +329,60 @@ def kayta_ekopisteita(pelaaja_id, toiminto):
             "error": str(e)
         }
 
+
+#---------------------lataa_akku-------------------------#
+@app.route('/lataa_akkua/<int:pelaaja_id>/<tunnit>')
+def lataa_akkua(pelaaja_id, tunnit):
+    try:
+        pelaajasql = f"SELECT * FROM players WHERE id = '{pelaaja_id}'"
+        kursori = connection.cursor()
+        kursori.execute(pelaajasql)
+        pelaaja = kursori.fetchone()
+        if pelaaja is None:
+            return {
+                "status": 400,
+                "error": "Pelaajaa ei löytynyt"
+            }, 400
+        akku = pelaaja[4]
+        akkumax = pelaaja[5]
+        aika = pelaaja[6]
+
+        uusi_akku = akku + (int(tunnit) * 20)
+        uusi_aika = aika - int(tunnit)
+
+        if uusi_akku > akkumax:
+            uusi_akku = akkumax
+
+            sql = f"""
+              UPDATE players
+              SET battery = {uusi_akku}, time = {uusi_aika}
+              WHERE id = {pelaaja_id}
+              """
+            kursori.execute(sql)
+            connection.commit()
+
+            return {
+                   "status": 200,
+                   "akku": uusi_akku,
+                   "aika": uusi_aika
+            }, 200
+        else:
+            sql = f"UPDATE players SET battery = {uusi_akku}, time = {uusi_aika} WHERE id = '{pelaaja_id}'"
+            kursori.execute(sql)
+            connection.commit()
+
+            return {
+                "status": 200,
+                "akku": uusi_akku,
+                "aika": uusi_aika
+            }, 200
+    except Exception as e:
+         return {
+              "status": 400,
+              "error": str(e)
+         }
+
+
 """@app.route('/summa/<luku1>/<luku2>')
 def summa(luku1, luku2):
     try:
