@@ -1,8 +1,10 @@
 'use strict';
 
 let pelaajat = [];
+let kentat = [];
 let current_pelaaja = null;
 let pelaajan_merkki = null;
+let vanhat_merkit = [];
 
 const peli = document.querySelector('#peli');
 
@@ -21,7 +23,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
-//----------------------Pelaajat Merkki----------------------//
+//----------------------Karttamerkit----------------------//
 
 function näytä_pelaaja_kartalla() {
   if (pelaajan_merkki) {
@@ -43,6 +45,24 @@ function näytä_pelaaja_kartalla() {
   ],{icon: myIcon}).addTo(map);
 
   map.setView([current_pelaaja.lat, current_pelaaja.lng], 5);
+}
+
+function näytä_kohteet_kartalla(kohteet) {
+  //console.log(kohteet);
+  for(let kohde of kohteet) {
+    //console.log(kohde.latitude_deg, kohde.longitude_deg);
+    let merkki = L.marker([
+        kohde.latitude_deg,
+        kohde.longitude_deg,
+    ]).addTo(map);
+    vanhat_merkit.push(merkki);
+  }
+}
+
+function poista_vanhat_merkit() {
+  for(let merkki of vanhat_merkit) {
+    map.removeLayer(merkki);
+  }
 }
 
 //--------Luo pelaaja----//
@@ -76,6 +96,18 @@ async function hae_pelaajat() {
     }
 }
 
+//---------Hae kohteet------//
+async function hae_kentat(id) {
+  try {
+        const response = await fetch(`http://127.0.0.1:3000/haekentät/${id}`);
+        const jsonData = await response.json();
+
+        return jsonData.data;
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
 //----------------------Näytä pelaajat--------------------//
 function näytä_pelaajat() {
   peli.innerHTML = '<h1>Ekolentopeli 2</h1><h2>Valitse pelaaja</h2>';
@@ -104,11 +136,14 @@ function näytä_pelaajat() {
   peli.appendChild(pelaajanluontilomake);
 }
 
-function valitse_pelaaja(pelaaja) {
+async function valitse_pelaaja(pelaaja) {
   current_pelaaja = pelaaja;
-  hae_saa();
+  poista_vanhat_merkit();
   näytä_peli();
   näytä_pelaaja_kartalla();
+  kentat = await hae_kentat(current_pelaaja.id);
+  näytä_kohteet_kartalla(kentat);
+  hae_saa();
 }
 
 async function hae_saa(){
@@ -213,6 +248,7 @@ async function liiku() {
   }
 
 function takaisin() {
+  poista_vanhat_merkit();
   näytä_pelaajat();
 }
 
