@@ -79,22 +79,54 @@ function näytä_pelaajat() {
 
 function valitse_pelaaja(pelaaja) {
   current_pelaaja = pelaaja;
+  hae_saa();
   näytä_peli();
   näytä_pelaaja_kartalla();
 }
 
+async function hae_saa(){
+  try {
+    const res = await fetch(`http://127.0.0.1:3000/saa/${current_pelaaja.sijainti}`);
+    const data = await res.json();
+    current_pelaaja.saa = data.saa;
+    näytä_peli();
+  } catch (e) {
+    console.log(e);
+  }
+}
+
 function näytä_peli() {
+  const percent = current_pelaaja.akkumax > 0
+    ? Math.max(0, Math.min(100, (current_pelaaja.akku / current_pelaaja.akkumax) * 100))
+    : 0;
+  let color = percent > 50 ? 'limegreen' : percent > 20 ? 'orange' : 'red';
+
   peli.innerHTML = `
+    <div class="card">
         <h1>Ekolentopeli 2</h1>
         <h2>${current_pelaaja.nimi}</h2>
-        <p>Akku: ${current_pelaaja.akku}/${current_pelaaja.akkumax}</p>
-        <p>Sijainti: ${current_pelaaja.sijainti}</p>
-        <p>Eco pisteet: ${current_pelaaja.ekopisteet}</p>
-        <p>Aika: ${current_pelaaja.aika}</p>
-        <p>Maanosat: ${current_pelaaja.maanosat ? current_pelaaja.maanosat.join(', ') : 'Ei vielä'}</p>
         
-        <button onclick="liiku()">Lennä</button>
-        <button onclick="takaisin()">Takaisin</button>
+        <div class="battery">
+          Akku: ${current_pelaaja.akku}/${current_pelaaja.akkumax}
+          <div class="battery-bar">
+            <div class="battery-fill" style="width:${percent}%; background:${color}"></div>
+          </div>
+        </div>
+        <div class="info">
+            <p><b>Sijainti:</b> ${current_pelaaja.sijainti}</p>
+            <p><b>Eco pisteet:</b> ${current_pelaaja.ekopisteet}</p>
+            <p><b>Aika:</b> ${current_pelaaja.aika}</p>
+            <p><b>Maanosat:</b> ${current_pelaaja.maanosat ? current_pelaaja.maanosat.join(', ') : 'Ei vielä'}</p>
+            <p class="weather">Sää: ${current_pelaaja.saa || 'Ei haettu'}</p>
+        </div>
+        
+        <div class="buttons">
+            <button onclick="liiku()">Lennä</button>
+            <button onclick="takaisin()">Takaisin</button>
+            <button onclick="kayta('lataa')"> Lataa akku (1p)</button>
+            <button onclick="kayta('paranna')"> Paranna akkua (5p)</button>
+      </div>
+    </div>      
     `;
 }
 
@@ -122,7 +154,7 @@ async function liiku() {
     }
     alert(data.teksti);
 
-//päivitä pelajaa data
+  //päivitä pelajaa data
     current_pelaaja.sijainti = data.sijainti;
     current_pelaaja.akku = data.akku;
     current_pelaaja.aika = data.aika;
@@ -132,6 +164,17 @@ async function liiku() {
     if (data.maanosat) {
       current_pelaaja.maanosat = data.maanosat;
     }
+
+  //---------------Hae Sää-----------------
+  try {
+    const saaRes = await fetch(`http://127.0.0.1:3000/saa/${current_pelaaja.sijainti}`);
+    const saaData = await saaRes.json();
+
+    current_pelaaja.saa = saaData.saa;
+  } catch (error) {
+    console.log("Sää ei saatavilla");
+  }
+
     näytä_peli();
     näytä_pelaaja_kartalla(); //päivitä kartta
 
@@ -142,6 +185,29 @@ async function liiku() {
 
 function takaisin() {
   näytä_pelaajat();
+}
+
+//------------------------kayta toiminto-----------------------//
+async function kayta(toiminto) {
+  try {
+    const id = current_pelaaja.id;
+    const response = await fetch(
+        `http://127.0.0.1:3000/käytä_ekopisteitä/${current_pelaaja.id}/${toiminto}`);
+    const data = await response.json();
+
+    alert(data.error || data.message || "Toiminto suoritettu");
+
+    //päivitä pelaaja tiedot backendistä
+    await hae_pelaajat();
+
+    //valitse pelaaja uudestaan
+    current_pelaaja = pelaajat.find(p => p.id === id);
+    näytä_peli();
+    näytä_pelaaja_kartalla();
+
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 hae_pelaajat();
