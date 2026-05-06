@@ -125,11 +125,11 @@ def hae_kentät(id):
         kursori.execute(pelaajasql)
         pelaaja = kursori.fetchone()
         #print(pelaaja)
-        pelaajankenttä = hae_pelaajan_kenttä(pelaaja[2])
+        pelaajankenttä = hae_pelaajan_kenttä(pelaaja[4])
         for k in kentät:
             if k[1] == pelaajankenttä[1]:
                 continue
-            if distance.distance((k[4], k[5]), (pelaajankenttä[4], pelaajankenttä[5])).km < pelaaja[4] * 4:
+            if distance.distance((k[4], k[5]), (pelaajankenttä[4], pelaajankenttä[5])).km < pelaaja[2] * 4:
                 data.append({
                     "id": k[0],
                     "ident": k[1],
@@ -255,6 +255,7 @@ def liiku_pelaaja():
         if exists is None:
             sql = "INSERT INTO continent_reached (player_id, continent) VALUES (%s, %s)"
             kursori.execute(sql, (pelaaja_id, continent))
+            connection.commit()
 
 #-----------------Päivitä pelaajat-----------------#
 
@@ -264,6 +265,7 @@ def liiku_pelaaja():
         WHERE id = %s
         """
         kursori.execute(sql, (kohde, uusi_akku, uusi_aika, pelaaja_id))
+        connection.commit()
         coords = loppu
 
         return jsonify({
@@ -283,7 +285,7 @@ def liiku_pelaaja():
             "error": str(e)
         }), 400
 #---------------------KÄYTÄ EKOPOINTSEJA-------------------------#
-@app.route('/käytä_ekopisteitä/<int:pelaaja_id>/<toiminto>')
+@app.route('/kayta_ekopisteita/<int:pelaaja_id>/<toiminto>')
 def kayta_ekopisteita(pelaaja_id, toiminto):
     try:
         sql = f"SELECT ecopoints, battery, batterymax FROM players WHERE id = '{pelaaja_id}'"
@@ -305,9 +307,11 @@ def kayta_ekopisteita(pelaaja_id, toiminto):
             sql = f"UPDATE players SET battery = {pelaaja[2]}, ecopoints = {pelaaja[0]-1} WHERE id = '{pelaaja_id}'"
             kursori = connection.cursor()
             kursori.execute(sql)
+            connection.commit()
             return {
                 "status": 200,
-                "error": "akku ladattu ekopisteillä"
+                "message": "akku ladattu ekopisteillä"
+
             }
         elif toiminto == "paranna":
             if pelaaja[0] < 5:
@@ -318,6 +322,7 @@ def kayta_ekopisteita(pelaaja_id, toiminto):
             sql = f"UPDATE players SET batterymax = {pelaaja[2]+100}, ecopoints = {pelaaja[0]-5} WHERE id = '{pelaaja_id}'"
             kursori = connection.cursor()
             kursori.execute(sql)
+            connection.commit()
             return {
                 "status": 200,
                 "error": "akku paranettu ekopisteillä"
@@ -343,8 +348,8 @@ def lataa_akkua(pelaaja_id, tunnit):
                 "status": 400,
                 "error": "Pelaajaa ei löytynyt"
             }, 400
-        akku = pelaaja[4]
-        akkumax = pelaaja[5]
+        akku = pelaaja[2]
+        akkumax = pelaaja[3]
         aika = pelaaja[6]
 
         uusi_akku = akku + (int(tunnit) * 20)

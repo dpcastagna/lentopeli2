@@ -90,13 +90,17 @@ function näytä_pelaajat() {
     peli.appendChild(document.createElement('br'));
   });
   const pelaajanluontilomake = document.createElement('div')
-  pelaajanluontilomake.class = "oikea";
-  pelaajanluontilomake.innerHTML = `<h3>Uusi pelaaja</h3>
-                        <form action="#">
-                            <label for="uusi">Nimi:</label>
-                            <input id="uusi" type="text" name="uusi" placeholder="Pelaajan nimi">
-                            <input type="submit" value="Lähetä">
-                        </form>`
+  pelaajanluontilomake.className = "oikea";
+  pelaajanluontilomake.innerHTML = `
+  <h3>Uusi pelaaja</h3>
+  <form action="#">
+    <div class="form-row">
+      <label for="uusi">Nimi:</label>
+      <input id="uusi" type="text" name="uusi" placeholder="Pelaajan nimi">
+      <input type="submit" value="Lähetä">
+    </div>
+  </form>
+`;
   peli.appendChild(pelaajanluontilomake);
 }
 
@@ -136,11 +140,13 @@ function näytä_peli() {
           </div>
         </div>
         <div class="info">
+            <p><b>Akku:</b> ${current_pelaaja.akku}/${current_pelaaja.akkumax}</p>
             <p><b>Sijainti:</b> ${current_pelaaja.sijainti}</p>
             <p><b>Eco pisteet:</b> ${current_pelaaja.ekopisteet}</p>
             <p><b>Aika:</b> ${current_pelaaja.aika}</p>
-            <p><b>Maanosat:</b> ${current_pelaaja.maanosat ? current_pelaaja.maanosat.join(', ') : 'Ei vielä'}</p>
-            <p class="weather">Sää: ${current_pelaaja.saa || 'Ei haettu'}</p>
+            <p><b>Maanosat:</b> ${current_pelaaja.maanosat && current_pelaaja.maanosat.length > 0
+                    ? current_pelaaja.maanosat.join(', ') : 'Ei vielä'}</p>
+            <p class="weather"><b>Sää:</b> ${current_pelaaja.saa || 'Ei haettu'}</p>
         </div>
         
         <div class="buttons">
