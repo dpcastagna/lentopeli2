@@ -45,6 +45,20 @@ function näytä_pelaaja_kartalla() {
   map.setView([current_pelaaja.lat, current_pelaaja.lng], 5);
 }
 
+//--------Luo pelaaja----//
+async function luo_pelaaja(nimi) {
+  try {
+        const response = await fetch(`http://127.0.0.1:3000/luopelaaja/${nimi}`);
+        const jsonData = await response.json();
+
+        console.log(jsonData);
+
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
+
 //----------------Hae pelaajat----------//
 async function hae_pelaajat() {
   try {
@@ -75,6 +89,15 @@ function näytä_pelaajat() {
     peli.appendChild(btn);
     peli.appendChild(document.createElement('br'));
   });
+  const pelaajanluontilomake = document.createElement('div')
+  pelaajanluontilomake.class = "oikea";
+  pelaajanluontilomake.innerHTML = `<h3>Uusi pelaaja</h3>
+                        <form action="#">
+                            <label for="uusi">Nimi:</label>
+                            <input id="uusi" type="text" name="uusi" placeholder="Pelaajan nimi">
+                            <input type="submit" value="Lähetä">
+                        </form>`
+  peli.appendChild(pelaajanluontilomake);
 }
 
 function valitse_pelaaja(pelaaja) {
@@ -211,6 +234,8 @@ async function kayta(toiminto) {
 }
 
 hae_pelaajat();
+
+
 
 
 
