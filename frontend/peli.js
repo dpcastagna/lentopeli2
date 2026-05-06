@@ -63,6 +63,7 @@ function poista_vanhat_merkit() {
   for(let merkki of vanhat_merkit) {
     map.removeLayer(merkki);
   }
+  vanhat_merkit = [];
 }
 
 //--------Luo pelaaja----//
@@ -119,7 +120,6 @@ function näytä_pelaajat() {
     btn.onclick = () => valitse_pelaaja(p);
 
     peli.appendChild(btn);
-    peli.appendChild(document.createElement('br'));
   });
   const pelaajanluontilomake = document.createElement('div')
   pelaajanluontilomake.className = "oikea";
@@ -133,17 +133,34 @@ function näytä_pelaajat() {
     </div>
   </form>
 `;
+  const form = pelaajanluontilomake.querySelector('form');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nimi = form.querySelector('#uusi').value;
+
+    if (!nimi) return;
+
+    await luo_pelaaja(nimi);
+    await hae_pelaajat(); // refresh list
+  });
+
   peli.appendChild(pelaajanluontilomake);
 }
 
 async function valitse_pelaaja(pelaaja) {
   current_pelaaja = pelaaja;
   poista_vanhat_merkit();
+
   näytä_peli();
   näytä_pelaaja_kartalla();
+
   kentat = await hae_kentat(current_pelaaja.id);
   näytä_kohteet_kartalla(kentat);
-  hae_saa();
+  await hae_saa();
+
+  näytä_peli();
+
 }
 
 async function hae_saa(){
@@ -175,7 +192,6 @@ function näytä_peli() {
           </div>
         </div>
         <div class="info">
-            <p><b>Akku:</b> ${current_pelaaja.akku}/${current_pelaaja.akkumax}</p>
             <p><b>Sijainti:</b> ${current_pelaaja.sijainti}</p>
             <p><b>Eco pisteet:</b> ${current_pelaaja.ekopisteet}</p>
             <p><b>Aika:</b> ${current_pelaaja.aika}</p>
@@ -231,19 +247,24 @@ async function liiku() {
 
   //---------------Hae Sää-----------------
   try {
-    const saaRes = await fetch(`http://127.0.0.1:3000/saa/${current_pelaaja.sijainti}`);
+    const saaRes = await fetch(
+        `http://127.0.0.1:3000/saa/${current_pelaaja.sijainti}`);
     const saaData = await saaRes.json();
 
     current_pelaaja.saa = saaData.saa;
   } catch (error) {
     console.log("Sää ei saatavilla");
   }
-
-    näytä_peli();
     näytä_pelaaja_kartalla(); //päivitä kartta
 
+    poista_vanhat_merkit();
+    kentat = await hae_kentat(current_pelaaja.id);
+    näytä_kohteet_kartalla(kentat);
+
+    näytä_peli();
+
   } catch (error) {
-        console.log(error);
+        console.log(error)
     }
   }
 
