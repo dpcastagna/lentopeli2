@@ -185,7 +185,9 @@ async function hae_kentat(id) {
 
 //----------------------Näytä pelaajat--------------------//
 function näytä_pelaajat() {
-  peli.innerHTML = '<h1>Ekolentopeli 2</h1><h2>Valitse pelaaja</h2>';
+  peli.innerHTML = '<h1>Ekolentopeli 2</h1>' +
+      '<p>Käy kaikilla mantereilla ja palaa Heathrow-kentälle Lontoohon.</p>' +
+      '<h3>Valitse pelaaja</h3>';
   pelaajat.forEach(p => {
     const btn = document.createElement('button');
     btn.textContent = `${p.nimi} (akku: ${p.akku})`;
@@ -217,6 +219,7 @@ function näytä_pelaajat() {
     await luo_pelaaja(nimi);
     await hae_pelaajat(); // refresh list
   });
+  peli.appendChild(pelaajanluontilomake);
 }
 
 async function valitse_pelaaja(pelaaja) {
