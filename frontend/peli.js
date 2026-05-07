@@ -47,6 +47,8 @@ function näytä_pelaaja_kartalla() {
   map.setView([current_pelaaja.lat, current_pelaaja.lng], 5);
 }
 
+//---------------------Näytä kohteet kartalla---------------//
+
 function näytä_kohteet_kartalla(kohteet) {
   //console.log(kohteet);
   for(let kohde of kohteet) {
@@ -55,15 +57,87 @@ function näytä_kohteet_kartalla(kohteet) {
         kohde.latitude_deg,
         kohde.longitude_deg,
     ]).addTo(map);
+    merkki.bindPopup(kohde.name);
+
+    //Add Click
+    merkki.on('click', () => {
+      lennä_animaatioon(kohde);
+    });
     vanhat_merkit.push(merkki);
   }
+}
+
+//-----------------LENNÄ ANIMAATIOON-----------//
+async function lennä_animaatioon(kohde) {
+  const startlat = current_pelaaja.lat;
+  const startlng = current_pelaaja.lng;
+
+  const endlat = kohde.latitude_deg;
+  const endlng = kohde.longitude_deg;
+
+  let steps = 50;
+  let i = 0;
+
+  const interval = setInterval(() => {
+    i++;
+
+    let lat = startlat + (endlat - startlat) * (i / steps);
+    let lng = startlng + (endlng - startlng) * (i / steps);
+
+    pelaajan_merkki.setLatLng([lat, lng]);
+    if (i >= steps) {
+      clearInterval(interval);
+
+    //-----------kun animaatiooon loppu-----//
+    tee_liike_backend(kohde.ident);
+    }
+
+  }, 30);
+
+}
+
+//-------------Liike Backend-------------//
+async function tee_liike_backend(icao) {
+  try {
+    const response = await fetch(`http://127.0.0.1:3000/liiku`, {
+      method: 'POST',
+      headers: {"Content-type": "application/json"},
+      body: JSON.stringify({
+        player_id: current_pelaaja.id,
+        icao: icao,
+      })
+    });
+    const data = await response.json();
+    if (data.status === 400) {
+      alert(data.message);
+      return;
+    }
+    //----------------PÄIVITÄ Pelaajat--------------//
+    current_pelaaja.sijainti = data.sijainti;
+    current_pelaaja.akku = data.akku;
+    current_pelaaja.aika = data.aika;
+    current_pelaaja.ekopisteet = data.ekopisteet;
+    current_pelaaja.lat = data.lat;
+    current_pelaaja.lng = data.lng;
+
+    if (data.maanosat) {
+      current_pelaaja.maanosat = data.maanosat;
+    }
+
+    await hae_saa()
+    poista_vanhat_merkit()
+    kentat = await hae_kentat(current_pelaaja.id);
+    näytä_kohteet_kartalla(kentat);
+    näytä_peli();
+
+  } catch (error) {
+    console.log(error);}
 }
 
 function poista_vanhat_merkit() {
   for(let merkki of vanhat_merkit) {
     map.removeLayer(merkki);
   }
-  vanhat_merkit = [];
 }
 
 //--------Luo pelaaja----//

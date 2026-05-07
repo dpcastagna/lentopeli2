@@ -202,7 +202,7 @@ def liiku_pelaaja():
         kursori = connection.cursor()
 
     #Get player data:
-        sql = "SELECT location, battery, time FROM players WHERE id = %s"
+        sql = "SELECT location, battery, time, ecopoints FROM players WHERE id = %s"
         kursori.execute(sql, (pelaaja_id,))
         pelaaja = kursori.fetchone()
         if pelaaja is None:
@@ -211,6 +211,7 @@ def liiku_pelaaja():
         nykyinen = pelaaja[0]
         akku = pelaaja[1]
         aika = pelaaja[2]
+        ekopisteet = pelaaja[3]
 
     #--------------coords----------------------#
         alku = hae_koordinaatit(nykyinen)
@@ -235,6 +236,7 @@ def liiku_pelaaja():
         #Päivitä arvot
         uusi_akku = akku - akku_kulutus
         uusi_aika = aika - aika_kulutus
+        uudet_ekopisteet = ekopisteet + 5
 
         #Hae maanosat
         sql = "SELECT continent FROM airport WHERE ident = %s"
@@ -262,10 +264,10 @@ def liiku_pelaaja():
 
         sql = """
         UPDATE players
-        SET location = %s, battery = %s, time = %s
+        SET location = %s, battery = %s, time = %s, ecopoints = %s
         WHERE id = %s
         """
-        kursori.execute(sql, (kohde, uusi_akku, uusi_aika, pelaaja_id))
+        kursori.execute(sql, (kohde, uusi_akku, uusi_aika, uudet_ekopisteet, pelaaja_id))
         connection.commit()
         coords = loppu
 
@@ -277,6 +279,7 @@ def liiku_pelaaja():
             "lng": coords[1],
             "akku": uusi_akku,
             "aika": uusi_aika,
+            "ekopisteet": uudet_ekopisteet,
             "maanosat" : hae_maanosat(pelaaja_id)
         })
 
