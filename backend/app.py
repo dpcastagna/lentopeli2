@@ -125,12 +125,12 @@ def hae_kentät(id):
         kursori = connection.cursor()
         kursori.execute(pelaajasql)
         pelaaja = kursori.fetchone()
-        #print(pelaaja)
-        pelaajankenttä = hae_pelaajan_kenttä(pelaaja[4])
+        print(pelaaja)
+        pelaajankenttä = hae_pelaajan_kenttä(pelaaja[2])
         for k in kentät:
             if k[1] == pelaajankenttä[1]:
                 continue
-            if distance.distance((k[4], k[5]), (pelaajankenttä[4], pelaajankenttä[5])).km < pelaaja[2] * 4:
+            if distance.distance((k[4], k[5]), (pelaajankenttä[4], pelaajankenttä[5])).km < pelaaja[4] * 4:
                 data.append({
                     "id": k[0],
                     "ident": k[1],

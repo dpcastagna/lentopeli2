@@ -157,6 +157,8 @@ async function valitse_pelaaja(pelaaja) {
 
   kentat = await hae_kentat(current_pelaaja.id);
   näytä_kohteet_kartalla(kentat);
+  //kentat = await hae_kentat(current_pelaaja.id);
+  //näytä_kohteet_kartalla(kentat);
   await hae_saa();
 
   näytä_peli();
@@ -257,9 +259,7 @@ async function liiku() {
   }
     näytä_pelaaja_kartalla(); //päivitä kartta
 
-    poista_vanhat_merkit();
-    kentat = await hae_kentat(current_pelaaja.id);
-    näytä_kohteet_kartalla(kentat);
+
 
     näytä_peli();
 
