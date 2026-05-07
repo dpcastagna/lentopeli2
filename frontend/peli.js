@@ -277,10 +277,10 @@ function näytä_peli() {
         </div>
         
         <div class="buttons">
-            <button onclick="liiku()">Lennä</button>
-            <button onclick="takaisin()">Takaisin</button>
+            
             <button onclick="kayta('lataa')"> Lataa akku (1p)</button>
             <button onclick="kayta('paranna')"> Paranna akkua (5p)</button>
+            <button onclick="takaisin()">Takaisin</button>
       </div>
     </div>      
     `;
@@ -364,6 +364,10 @@ async function kayta(toiminto) {
     current_pelaaja = pelaajat.find(p => p.id === id);
     näytä_peli();
     näytä_pelaaja_kartalla();
+
+    kentat = await hae_kentat(current_pelaaja.id);
+    näytä_kohteet_kartalla(kentat);
+    await hae_saa();
 
   } catch (error) {
     console.log(error);
