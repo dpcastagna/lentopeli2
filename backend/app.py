@@ -347,7 +347,7 @@ def kayta_ekopisteita(pelaaja_id, toiminto):
 
             kursori = connection.cursor()
             kursori.execute(sql, (
-                uusi_max,
+                battery,
                 uusi_max,
                 pelaaja[0] - 5,
                 pelaaja_id
@@ -378,13 +378,11 @@ def lataa_akkua(pelaaja_id, tunnit):
                 "status": 400,
                 "error": "Pelaajaa ei löytynyt"
             }, 400
-        akku = pelaaja[2]
-        akkumax = pelaaja[3]
+        akku = pelaaja[4]
+        akkumax = pelaaja[5]
         aika = pelaaja[6]
-
         uusi_akku = akku + (int(tunnit) * 20)
         uusi_aika = aika - int(tunnit)
-
         if uusi_akku > akkumax:
             uusi_akku = akkumax
 
@@ -417,31 +415,6 @@ def lataa_akkua(pelaaja_id, tunnit):
               "error": str(e)
          }
 
-
-"""@app.route('/summa/<luku1>/<luku2>')
-def summa(luku1, luku2):
-    try:
-        luku1 = float(luku1)
-        luku2 = float(luku2)
-        summa = luku1+luku2
-
-        tilakoodi = 200
-        vastaus = {
-            "status": tilakoodi,
-            "luku1": luku1,
-            "luku2": luku2,
-            "summa": summa
-        }
-
-    except ValueError:
-        tilakoodi = 400
-        vastaus = {
-            "status": tilakoodi,
-            "teksti": "Virheellinen yhteenlaskettava"
-        }
-
-    jsonvast = json.dumps(vastaus)
-    return Response(response=jsonvast, status=tilakoodi, mimetype="application/json")"""
 
 #-------------------------SÄÄ---------------------------------#
 @app.route('/saa/<icao>')

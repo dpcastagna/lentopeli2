@@ -9,7 +9,6 @@ let vanhat_merkit = [];
 const peli = document.querySelector('#peli');
 
 //----------------------KARTTA----------------------------//
-
 //pitäisi estää 403r-virheet "karttatiilissä", ei näytä toimivan Firefoxissa, Chromessa ei näytä virheitä
 L.TileLayer.prototype.options.referrerPolicy = 'strict-origin-when-cross-origin';
 
@@ -19,7 +18,8 @@ const map = L.map('map', {
 });
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
+    maxZoom: 7,
+    minZoom: 2,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
@@ -165,7 +165,7 @@ async function hae_pelaajat() {
 
         näytä_pelaajat();
 
-        console.log(pelaajat);
+        //console.log(pelaajat);
     } catch (error) {
         console.log(error.message);
     }
@@ -185,18 +185,29 @@ async function hae_kentat(id) {
 
 //----------------------Näytä pelaajat--------------------//
 function näytä_pelaajat() {
-  peli.innerHTML = '<h1>Ekolentopeli 2</h1><h2>Valitse pelaaja</h2>';
+  peli.innerHTML = '';
+  const pelitop = document.createElement('div')
+  pelitop.innerHTML = '<h1>Ekolentopeli 2</h1>' +
+      '<h2>Lennä jokaiselle mantereelle ja palaa Lontoon Heathrow:n kentälle 80 päivän sisällä</h2>';
 
+  peli.appendChild(pelitop)
+  const pelibottom = document.createElement('div');
+  pelibottom.id = 'pelibottom';
+  const pelaajalaatikko = document.createElement('div')
+  pelaajalaatikko.innerHTML = '<h3>Valitse pelaaja</h3>';
+  pelaajalaatikko.id = 'vasen';
   pelaajat.forEach(p => {
     const btn = document.createElement('button');
     btn.textContent = `${p.nimi} (akku: ${p.akku})`;
 
     btn.onclick = () => valitse_pelaaja(p);
 
-    peli.appendChild(btn);
+    pelaajalaatikko.appendChild(btn);
   });
+  pelibottom.appendChild(pelaajalaatikko);
+
   const pelaajanluontilomake = document.createElement('div')
-  pelaajanluontilomake.className = "oikea";
+  pelaajanluontilomake.id = "oikea";
   pelaajanluontilomake.innerHTML = `
   <h3>Uusi pelaaja</h3>
   <form action="#">
@@ -219,26 +230,42 @@ function näytä_pelaajat() {
     await hae_pelaajat(); // refresh list
   });
 
-  peli.appendChild(pelaajanluontilomake);
+  pelibottom.appendChild(pelaajanluontilomake);
+  peli.appendChild(pelibottom);
 }
 
 async function valitse_pelaaja(pelaaja) {
   current_pelaaja = pelaaja;
   poista_vanhat_merkit();
+  const jatka = tarkistus();
 
-  näytä_peli();
-  näytä_pelaaja_kartalla();
+  if(jatka) {
+    näytä_peli();
+    näytä_pelaaja_kartalla();
 
-  kentat = await hae_kentat(current_pelaaja.id);
-  näytä_kohteet_kartalla(kentat);
-  //kentat = await hae_kentat(current_pelaaja.id);
-  //näytä_kohteet_kartalla(kentat);
-  await hae_saa();
+    kentat = await hae_kentat(current_pelaaja.id);
+    näytä_kohteet_kartalla(kentat);
+    await hae_saa();
 
-  näytä_peli();
+    näytä_peli();
+  }
 
 }
 
+function tarkistus() {
+  //console.log(current_pelaaja.maanosat.toSorted() === ['EU', 'AS', 'OC', 'AF', 'AN', 'NA', 'SA'].toSorted() && current_pelaaja.sijainti == 'EGLL');
+  //console.log(current_pelaaja.maanosat.toSorted(), ["EU", "AS", "OC", "AF", "AN", "NA", "SA"].toSorted(), current_pelaaja.sijainti == 'EGLL')
+  if(current_pelaaja.aika < 1) {
+    peli.innerHTML = `<h1>AIKASI LOPPUI. PELISI ON PELATTU!</h1>
+            <button onclick="takaisin()">Palaa pelaajavalintaan</button>`
+    return false;
+  } else if(current_pelaaja.maanosat.length == 7 && current_pelaaja.sijainti == 'EGLL') {
+    peli.innerHTML = `<h1>KÄVIT KAIKILLA MANTEREILLA JA PALASIT LONTOON HEATHROW:N KENTÄLLE. LÄPÄISIT PELIN!</h1>
+            <button onclick="takaisin()">Palaa pelaajavalintaan</button>`
+    return false;
+  }
+    return true;
+}
 async function hae_saa(){
   try {
     const res = await fetch(`http://127.0.0.1:3000/saa/${current_pelaaja.sijainti}`);
@@ -258,16 +285,14 @@ function näytä_peli() {
 
   peli.innerHTML = `
     <div class="card">
-        <h1>Ekolentopeli 2</h1>
-        <h2>${current_pelaaja.nimi}</h2>
-        
-        <div class="battery">
-          Akku: ${current_pelaaja.akku}/${current_pelaaja.akkumax}
-          <div class="battery-bar">
-            <div class="battery-fill" style="width:${percent}%; background:${color}"></div>
-          </div>
-        </div>
         <div class="info">
+            <h1>${current_pelaaja.nimi}</h1>
+            <div class="battery">
+              Akku: ${current_pelaaja.akku}/${current_pelaaja.akkumax}
+              <div class="battery-bar">
+                <div class="battery-fill" style="width:${percent}%; background:${color}"></div>
+              </div>
+            </div>
             <p><b>Sijainti:</b> ${current_pelaaja.sijainti}</p>
             <p><b>Eco pisteet:</b> ${current_pelaaja.ekopisteet}</p>
             <p><b>Aika:</b> ${current_pelaaja.aika}</p>
@@ -277,10 +302,11 @@ function näytä_peli() {
         </div>
         
         <div class="buttons">
-            
+            <button onclick="lataa(5)"> Lataa akkua 5 tuntia</button>
+            <button onclick="lataa(10)"> Lataa akkua 10 tuntia</button>
             <button onclick="kayta('lataa')"> Lataa akku (1p)</button>
             <button onclick="kayta('paranna')"> Paranna akkua (5p)</button>
-            <button onclick="takaisin()">Takaisin</button>
+            <button onclick="takaisin()">Palaa pelaajavalintaan</button>
       </div>
     </div>      
     `;
@@ -334,7 +360,6 @@ async function liiku() {
     näytä_pelaaja_kartalla(); //päivitä kartta
 
 
-
     näytä_peli();
 
   } catch (error) {
@@ -347,6 +372,31 @@ function takaisin() {
   näytä_pelaajat();
 }
 
+async function lataa(tunnit) {
+  try {
+    const id = current_pelaaja.id;
+    const response = await fetch(
+        `http://127.0.0.1:3000/lataa_akkua/${current_pelaaja.id}/${tunnit}`);
+    const data = await response.json();
+
+    alert(data.error || data.message || "Akkua ladattu");
+
+    //päivitä pelaaja tiedot backendistä
+    await hae_pelaajat();
+
+    //valitse pelaaja uudestaan
+    current_pelaaja = pelaajat.find(p => p.id === id);
+    näytä_peli();
+    näytä_pelaaja_kartalla();
+
+    kentat = await hae_kentat(current_pelaaja.id);
+    näytä_kohteet_kartalla(kentat);
+    await hae_saa();
+
+  } catch (error) {
+    console.log(error);
+  }
+}
 //------------------------kayta toiminto-----------------------//
 async function kayta(toiminto) {
   try {
