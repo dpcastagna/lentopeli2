@@ -185,27 +185,15 @@ async function hae_kentat(id) {
 
 //----------------------Näytä pelaajat--------------------//
 function näytä_pelaajat() {
-  peli.innerHTML = '';
-  const pelitop = document.createElement('div')
-  pelitop.innerHTML = '<h1>Ekolentopeli 2</h1>' +
-      '<h2>Lennä jokaiselle mantereelle ja palaa Lontoon Heathrow:n kentälle 80 päivän sisällä</h2>';
-
-  peli.appendChild(pelitop)
-  const pelibottom = document.createElement('div');
-  pelibottom.id = 'pelibottom';
-  const pelaajalaatikko = document.createElement('div')
-  pelaajalaatikko.innerHTML = '<h3>Valitse pelaaja</h3>';
-  pelaajalaatikko.id = 'vasen';
+  peli.innerHTML = '<h1>Ekolentopeli 2</h1><h2>Valitse pelaaja</h2>';
   pelaajat.forEach(p => {
     const btn = document.createElement('button');
     btn.textContent = `${p.nimi} (akku: ${p.akku})`;
 
     btn.onclick = () => valitse_pelaaja(p);
 
-    pelaajalaatikko.appendChild(btn);
+    peli.appendChild(btn);
   });
-  pelibottom.appendChild(pelaajalaatikko);
-
   const pelaajanluontilomake = document.createElement('div')
   pelaajanluontilomake.id = "oikea";
   pelaajanluontilomake.innerHTML = `
@@ -229,9 +217,6 @@ function näytä_pelaajat() {
     await luo_pelaaja(nimi);
     await hae_pelaajat(); // refresh list
   });
-
-  pelibottom.appendChild(pelaajanluontilomake);
-  peli.appendChild(pelibottom);
 }
 
 async function valitse_pelaaja(pelaaja) {
