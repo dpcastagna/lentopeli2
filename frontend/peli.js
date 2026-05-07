@@ -352,7 +352,7 @@ async function kayta(toiminto) {
   try {
     const id = current_pelaaja.id;
     const response = await fetch(
-        `http://127.0.0.1:3000/käytä_ekopisteitä/${current_pelaaja.id}/${toiminto}`);
+        `http://127.0.0.1:3000/kayta_ekopisteita/${current_pelaaja.id}/${toiminto}`);
     const data = await response.json();
 
     alert(data.error || data.message || "Toiminto suoritettu");

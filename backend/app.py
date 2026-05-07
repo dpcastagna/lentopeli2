@@ -172,6 +172,7 @@ def luo_pelaaja(nimi):
         kursori = connection.cursor()
         kursori.execute(sql)
         kentät = kursori.fetchall()
+        connection.commit()
 
 
         tilakoodi = 200
@@ -301,35 +302,60 @@ def kayta_ekopisteita(pelaaja_id, toiminto):
                 "status": 400,
                 "error": "Pelaajaa ei löytynyt"
             }
+        ecopoints = pelaaja[0]
+        battery = pelaaja[1]
+        batterymax = pelaaja[2]
 
+        #--------------LATAA--------------#
         if toiminto == "lataa":
-            if pelaaja[0] < 1:
+            if ecopoints < 1:
                 return {
                     "status": 400,
                     "error": "lian vähän ekopisteitä"
                 }
-            sql = f"UPDATE players SET battery = {pelaaja[2]}, ecopoints = {pelaaja[0]-1} WHERE id = '{pelaaja_id}'"
+
+            sql = """
+            UPDATE players
+            SET battery = %s, ecopoints = %s WHERE id = %s"""
             kursori = connection.cursor()
-            kursori.execute(sql)
+            kursori.execute(sql, (
+                batterymax,
+                ecopoints - 1,
+                pelaaja_id
+            ))
+
             connection.commit()
             return {
                 "status": 200,
                 "message": "akku ladattu ekopisteillä"
-
             }
+        #--------------PARANNAA------##
         elif toiminto == "paranna":
-            if pelaaja[0] < 5:
+            if ecopoints < 5:
                 return {
                     "status": 400,
                     "error": "lian vähän ekopisteitä"
                 }
-            sql = f"UPDATE players SET batterymax = {pelaaja[2]+100}, ecopoints = {pelaaja[0]-5} WHERE id = '{pelaaja_id}'"
+            uusi_max = batterymax + 100
+            sql = """
+            UPDATE players
+            SET battery = %s,
+                batterymax = %s,
+                ecopoints = %s
+            WHERE id = %s
+            """
+
             kursori = connection.cursor()
-            kursori.execute(sql)
+            kursori.execute(sql, (
+                uusi_max,
+                uusi_max,
+                pelaaja[0] - 5,
+                pelaaja_id
+            ))
             connection.commit()
             return {
                 "status": 200,
-                "error": "akku paranettu ekopisteillä"
+                "message": "akku paranettu ekopisteillä"
             }
 
     except Exception as e:
